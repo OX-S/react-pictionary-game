@@ -8,6 +8,9 @@ const Canvas = ({ disabled }) => {
     const [color, setColor] = useState('#000000');
     const [brushRadius, setBrushRadius] = useState(5);
     const [isEraserActive, setIsEraserActive] = useState(false);
+    const [previousColor, setPreviousColor] = useState('#000000'); // Stores previous color, so I can return to prev color after deselecting eraser
+
+
 
     useEffect(() => {
         socket.on('drawing', (data) => {
@@ -33,6 +36,20 @@ const Canvas = ({ disabled }) => {
         };
     }, []);
 
+    const undo = () => {
+        if (canvasRef.current) {
+            canvasRef.current.undo();
+            handleStroke();
+        }
+    };
+
+    const redo = () => {
+        if (canvasRef.current) {
+            canvasRef.current.redo();
+            handleStroke();
+        }
+    };
+
     const handleStroke = async () => {
         if (canvasRef.current) {
             const data = await canvasRef.current.exportPaths();
@@ -43,9 +60,10 @@ const Canvas = ({ disabled }) => {
     const toggleEraser = () => {
         setIsEraserActive(!isEraserActive);
         if (!isEraserActive) {
+            setPreviousColor(color);
             setColor('#FFFFFF');
         } else {
-            setColor('#000000');
+            setColor(previousColor);
         }
     };
 
@@ -55,6 +73,38 @@ const Canvas = ({ disabled }) => {
             socket.emit('clearCanvas');
         }
     };
+
+    // const fillCanvas = async () => {
+    //     if (canvasRef.current) {
+    //         // Get the current paths
+    //         const paths = await canvasRef.current.exportPaths();
+    //
+    //         // Create a new path that fills the canvas
+    //         const fillPath = {
+    //             drawMode: 'fill',
+    //             paths: [
+    //                 {
+    //                     x: 0,
+    //                     y: 0,
+    //                 },
+    //                 {
+    //                     x: canvasRef.current.props.width,
+    //                     y: canvasRef.current.props.height,
+    //                 },
+    //             ],
+    //             strokeColor: color,
+    //             strokeWidth: 0,
+    //         };
+    //
+    //         // Add the fill path
+    //         canvasRef.current.loadPaths([...paths, fillPath]);
+    //
+    //         // Emit the updated paths
+    //         const data = await canvasRef.current.exportPaths();
+    //         socket.emit('drawing', data);
+    //     }
+    // };
+
 
     return (
         <div className="border border-gray-300 p-2">
@@ -95,8 +145,22 @@ const Canvas = ({ disabled }) => {
                     </button>
 
                     {/* Clear Canvas */}
-                    <button className="btn btn-error" onClick={clearCanvas}>
+                    <button className="btn btn-error mr-2" onClick={clearCanvas}>
                         Clear Canvas
+                    </button>
+
+
+                    {/*<button className="btn mr-2" onClick={fillCanvas}>*/}
+                    {/*    Fill*/}
+                    {/*</button>*/}
+
+
+                    {/* Undo/Redo */}
+                    <button className="btn mr-2" onClick={undo}>
+                        Undo
+                    </button>
+                    <button className="btn mr-2" onClick={redo}>
+                        Redo
                     </button>
                 </div>
             )}
