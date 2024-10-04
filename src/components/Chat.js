@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, {
+    useState,
+    useEffect,
+} from 'react';
 import socket from '../socket';
 
 const Chat = () => {
-    const [messages, setMessages] = useState([]);
+    const [messages, setMessages] =
+        useState([]);
     const [input, setInput] = useState('');
 
     useEffect(() => {
         socket.on('message', (message) => {
-            setMessages((msgs) => [...msgs, message]);
+            setMessages((msgs) => [
+                ...msgs,
+                message,
+            ]);
         });
 
         return () => {
@@ -18,7 +25,7 @@ const Chat = () => {
     const sendMessage = (e) => {
         e.preventDefault();
         if (input.trim()) {
-            socket.emit('message', input);
+            socket.emit('guess', input);
             setInput('');
         }
     };
@@ -29,6 +36,9 @@ const Chat = () => {
                 {messages.map((msg, idx) => (
                     <div key={idx} className="message mb-2">
                         <strong>{msg.username}:</strong> {msg.text}
+                        {msg.correct && (
+                            <span className="text-green-500"> (Correct!)</span>
+                        )}
                     </div>
                 ))}
             </div>
@@ -36,9 +46,14 @@ const Chat = () => {
                 <input
                     className="input input-bordered w-full mr-2"
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) =>
+                        setInput(e.target.value)
+                    }
                 />
-                <button className="btn btn-primary" type="submit">
+                <button
+                    className="btn btn-primary"
+                    type="submit"
+                >
                     Send
                 </button>
             </form>

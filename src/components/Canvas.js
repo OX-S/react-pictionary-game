@@ -1,3 +1,5 @@
+// src/components/Canvas.js
+
 import React, { useRef, useEffect } from 'react';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import socket from '../socket';
@@ -5,21 +7,34 @@ import socket from '../socket';
 const Canvas = ({ color, brushRadius, disabled }) => {
     const canvasRef = useRef(null);
 
+    // Listen for drawing data from other clients
     useEffect(() => {
-        if (!disabled) {
-            socket.on('drawing', (data) => {
-                if (canvasRef.current && data) {
-                    canvasRef.current.loadPaths(data);
-                }
-            });
+        socket.on('drawing', (data) => {
+            if (canvasRef.current && data) {
+                canvasRef.current.loadPaths(data);
+            }
+        });
 
-            return () => {
-                socket.off('drawing');
-            };
-        }
-    }, [disabled]);
+        return () => {
+            socket.off('drawing');
+        };
+    }, []);
 
-    const handleChange = async () => {
+    // Listen for canvas clear event
+    useEffect(() => {
+        socket.on('clearCanvas', () => {
+            if (canvasRef.current) {
+                canvasRef.current.clearCanvas();
+            }
+        });
+
+        return () => {
+            socket.off('clearCanvas');
+        };
+    }, []);
+
+    // Handle drawing events
+    const handleStroke = async () => {
         if (canvasRef.current) {
             const data = await canvasRef.current.exportPaths();
             socket.emit('drawing', data);
@@ -32,10 +47,15 @@ const Canvas = ({ color, brushRadius, disabled }) => {
                 ref={canvasRef}
                 strokeColor={color}
                 strokeWidth={brushRadius}
-                onStroke={handleChange}
                 width="100%"
                 height="400px"
+                className="canvas"
+                onStroke={handleStroke}
                 style={{ border: 'none' }}
+                canvasColor="#FFFFFF"
+                withTimestamp={true}
+                allowOnlyPointerType="all"
+                readOnly={disabled}
             />
         </div>
     );
