@@ -1,5 +1,3 @@
-// src/pages/Room.js
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import Canvas from '../components/Canvas';
@@ -16,27 +14,25 @@ const Room = () => {
     const [assignedWord, setAssignedWord] = useState('');
     const [scores, setScores] = useState({});
     const [timeLeft, setTimeLeft] = useState(60);
-
-    // State to control modal visibility
     const [showWaitingModal, setShowWaitingModal] = useState(false);
 
-    // Reference to the modal element
     const modalRef = useRef(null);
+
+    // keep track of the newest timer
+    const timerRef = useRef(null);
 
     useEffect(() => {
         socket.on('userList', (userList) => {
             setUsers(userList);
 
-            // Show modal if only one player is in the room
+            // wait for second player popup
             if (userList.length < 2) {
                 setShowWaitingModal(true);
-                // Show the modal using the ref
                 if (modalRef.current) {
                     modalRef.current.showModal();
                 }
             } else {
                 setShowWaitingModal(false);
-                // Close the modal if more players join
                 if (modalRef.current) {
                     modalRef.current.close();
                 }
@@ -53,22 +49,40 @@ const Room = () => {
             if (drawer !== username) {
                 setAssignedWord('');
             }
+
+            setTimeLeft(60);
+
+            // Kill all old timers
+            if (timerRef.current) {
+                socket.off('timerUpdate', timerRef.current);
+            }
+
+            // New timer listener
+            timerRef.current = (time) => {
+                setTimeLeft(time);
+            };
+            socket.on('timerUpdate', timerRef.current);
         });
+
+        timerRef.current = (time) => {
+            setTimeLeft(time);
+        };
+        socket.on('timerUpdate', timerRef.current);
 
         socket.on('updateScores', (updatedScores) => {
             setScores(updatedScores);
         });
 
-        socket.on('timerUpdate', (time) => {
-            setTimeLeft(time);
-        });
-
         return () => {
+            // Kill all old socket listeners on component unmount
             socket.off('userList');
             socket.off('wordAssigned');
             socket.off('newRound');
             socket.off('updateScores');
-            socket.off('timerUpdate');
+
+            if (timerRef.current) {
+                socket.off('timerUpdate', timerRef.current);
+            }
         };
     }, [username]);
 
@@ -76,14 +90,14 @@ const Room = () => {
         <div className="p-4">
             <h1 className="text-2xl mb-4">Room: {roomId}</h1>
             <div className="timer mb-4">Time Left: {timeLeft} seconds</div>
-            {isDrawer && (
+            {isDrawer && assignedWord && (
                 <div className="alert alert-info mb-4">
                     Your word to draw: <strong>{assignedWord}</strong>
                 </div>
             )}
             <div className="flex flex-col lg:flex-row">
                 <div className="lg:w-3/4 lg:mr-4">
-                    <Canvas color="#000" brushRadius={2} disabled={!isDrawer} />
+                    <Canvas disabled={!isDrawer} />
                 </div>
                 <div className="lg:w-1/4">
                     <Chat />
@@ -112,7 +126,7 @@ const Room = () => {
                 </div>
             </div>
 
-            {/* DaisyUI Modal */}
+            {/* Waiting for players popup */}
             <dialog id="waiting_modal" className="modal" ref={modalRef}>
                 <form method="dialog" className="modal-box">
                     <h3 className="font-bold text-lg">Waiting for Other Players</h3>
@@ -120,7 +134,6 @@ const Room = () => {
                         You are the only player in the room. Please wait for others to join.
                     </p>
                     <div className="modal-action">
-                        {/* The button will close the modal */}
                         <button className="btn" onClick={() => modalRef.current.close()}>
                             Close
                         </button>

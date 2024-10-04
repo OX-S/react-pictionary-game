@@ -1,5 +1,3 @@
-// src/components/Canvas.js
-
 import React, { useRef, useEffect, useState } from 'react';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import socket from '../socket';
@@ -7,12 +5,10 @@ import socket from '../socket';
 const Canvas = ({ disabled }) => {
     const canvasRef = useRef(null);
 
-    // State for drawing controls
     const [color, setColor] = useState('#000000');
     const [brushRadius, setBrushRadius] = useState(5);
     const [isEraserActive, setIsEraserActive] = useState(false);
 
-    // Listen for drawing data from other clients
     useEffect(() => {
         socket.on('drawing', (data) => {
             if (canvasRef.current && data) {
@@ -25,7 +21,6 @@ const Canvas = ({ disabled }) => {
         };
     }, []);
 
-    // Listen for canvas clear event
     useEffect(() => {
         socket.on('clearCanvas', () => {
             if (canvasRef.current) {
@@ -38,7 +33,6 @@ const Canvas = ({ disabled }) => {
         };
     }, []);
 
-    // Handle drawing events
     const handleStroke = async () => {
         if (canvasRef.current) {
             const data = await canvasRef.current.exportPaths();
@@ -46,17 +40,15 @@ const Canvas = ({ disabled }) => {
         }
     };
 
-    // Toggle eraser mode
     const toggleEraser = () => {
         setIsEraserActive(!isEraserActive);
         if (!isEraserActive) {
-            setColor('#FFFFFF'); // Assuming white background
+            setColor('#FFFFFF');
         } else {
-            setColor('#000000'); // Default back to black or previous color
+            setColor('#000000');
         }
     };
 
-    // Clear canvas function
     const clearCanvas = () => {
         if (canvasRef.current) {
             canvasRef.current.clearCanvas();
@@ -66,7 +58,7 @@ const Canvas = ({ disabled }) => {
 
     return (
         <div className="border border-gray-300 p-2">
-            {/* Drawing Controls */}
+            {/* Brush Controls */}
             {!disabled && (
                 <div className="flex items-center mb-2">
                     {/* Color Picker */}
@@ -81,7 +73,7 @@ const Canvas = ({ disabled }) => {
                         />
                     </label>
 
-                    {/* Brush Size Slider */}
+                    {/* Brush Size */}
                     <label className="flex items-center mr-4">
                         <span className="mr-2">Brush Size:</span>
                         <input
@@ -102,14 +94,13 @@ const Canvas = ({ disabled }) => {
                         {isEraserActive ? 'Eraser On' : 'Eraser Off'}
                     </button>
 
-                    {/* Clear Canvas Button */}
+                    {/* Clear Canvas */}
                     <button className="btn btn-error" onClick={clearCanvas}>
                         Clear Canvas
                     </button>
                 </div>
             )}
 
-            {/* Drawing Canvas */}
             <ReactSketchCanvas
                 ref={canvasRef}
                 strokeColor={isEraserActive ? '#FFFFFF' : color}

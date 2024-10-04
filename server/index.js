@@ -15,12 +15,33 @@ const io = new Server(server, {
 });
 
 const words = [
-    'apple',
-    'house',
-    'car',
-    'dog',
-    'tree',
-    // Add more words as needed
+    'Apple',
+    'House',
+    'Car',
+    'Dog',
+    'Tree',
+    'Storm',
+    'Pancakes',
+    'Laptop',
+    'Tent',
+    'Gummy Bears',
+    'Firefighter',
+    'Dictionary',
+    'Mummy',
+    'Shrek',
+    'Titanic',
+    'Taco',
+    'Soccer',
+    'Golf',
+    'Chess',
+    'Paris',
+    'Sleep',
+    'Bacon',
+    'Shrimp',
+    'Skibidi Toilet',
+    'Chef',
+    'Watch',
+    'Coffee'
 ];
 
 let rooms = {};
@@ -28,6 +49,7 @@ let rooms = {};
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
+    // Join Room
     socket.on('joinRoom', (roomId, username) => {
         socket.join(roomId);
         socket.username = username;
@@ -51,7 +73,7 @@ io.on('connection', (socket) => {
             username,
         });
 
-        // Initialize scores
+        // Init scores
         rooms[roomId].scores[username] = 0;
 
         io.to(roomId).emit(
@@ -59,7 +81,7 @@ io.on('connection', (socket) => {
             rooms[roomId].users
         );
 
-        // Automatically start game if enough players
+        // Start game when players >= 2
         const room = rooms[roomId];
         if (
             room.users.length >= 2 &&
@@ -71,6 +93,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Drawing signal
     socket.on('drawing', (data) => {
         const room = rooms[socket.roomId];
         if (room) {
@@ -81,6 +104,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Guess send signal
     socket.on('guess', (text) => {
         const room = rooms[socket.roomId];
         if (!room) return;
@@ -105,16 +129,16 @@ io.on('connection', (socket) => {
                 room.scores
             );
 
-            // Stop the timer
             clearInterval(room.timer);
 
-            // Start new round after a delay
+            // Start new round after 3 secs
             setTimeout(() => {
                 startNewRound(socket.roomId);
-            }, 3000); // 3-second delay
+            }, 3000);
         }
     });
 
+    // Disconnect signal
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         const room = rooms[socket.roomId];
@@ -132,12 +156,13 @@ io.on('connection', (socket) => {
                 room.scores
             );
 
-            // If room is empty, delete it
+            // kill empty rooms
             if (room.users.length === 0) {
                 delete rooms[socket.roomId];
             }
         }
     });
+
 
     function startNewRound(roomId) {
         const room = rooms[roomId];
@@ -165,8 +190,7 @@ io.on('connection', (socket) => {
         room.drawingData = null;
         io.to(roomId).emit('clearCanvas');
 
-        // Start round timer
-        room.timeLeft = 60; // 60 seconds
+        room.timeLeft = 60;
         if (room.timer) {
             clearInterval(room.timer);
         }
